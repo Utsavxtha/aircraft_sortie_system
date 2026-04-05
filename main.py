@@ -1,3 +1,6 @@
+import os
+os.environ["CUSTOMTKINTER_DISABLE_FONT_SHAPES"] = "1"
+
 import customtkinter as ctk
 from database.connection import Base, engine, get_session
 from views.aircraft_view import AircraftView
@@ -11,18 +14,22 @@ from views.query_view import QueryView
 
 Base.metadata.create_all(engine)
 
+from datetime import date, datetime, time
 from database.models import Aircraft, Pilot, Flight, Crew, FlightLog, Passenger, Booking
-from database.connection import get_session
 
 def seed():
     s = get_session()
-    if s.query(Aircraft).count() > 0:
-        return  # already seeded
+    try:
+        if s.query(Aircraft).count() > 0:
+            return
+    except Exception:
+        s.rollback()
+        return
 
     s.add_all([
-        Aircraft(aircraft_id="AC001", registration_number="REG-001", model="F-16 Falcon",     type="Fighter",    status="Active",      flight_hours_total=1200.50, last_maintenance_date="2024-12-01"),
-        Aircraft(aircraft_id="AC002", registration_number="REG-002", model="C-130 Hercules",  type="Transport",  status="Active",      flight_hours_total=3400.00, last_maintenance_date="2025-01-15"),
-        Aircraft(aircraft_id="AC003", registration_number="REG-003", model="Apache AH-64",    type="Helicopter", status="Maintenance", flight_hours_total=890.75,  last_maintenance_date="2025-03-10"),
+        Aircraft(aircraft_id="AC001", registration_number="REG-001", model="F-16 Falcon",    type="Fighter",    status="Active",      flight_hours_total=1200.50, last_maintenance_date=date(2024,12,1)),
+        Aircraft(aircraft_id="AC002", registration_number="REG-002", model="C-130 Hercules", type="Transport",  status="Active",      flight_hours_total=3400.00, last_maintenance_date=date(2025,1,15)),
+        Aircraft(aircraft_id="AC003", registration_number="REG-003", model="Apache AH-64",   type="Helicopter", status="Maintenance", flight_hours_total=890.75,  last_maintenance_date=date(2025,3,10)),
     ])
     s.add_all([
         Pilot(pilot_id="P001", badge_number="B-101", first_name="Rajesh", last_name="Sharma", rank="Squadron Leader",    qualification_level="Level 3", status="Active", flight_hours_month=45.5,  flight_hours_total=1200.0),
@@ -30,9 +37,24 @@ def seed():
         Pilot(pilot_id="P003", badge_number="B-103", first_name="Bikash", last_name="Rai",    rank="Wing Commander",    qualification_level="Level 4", status="Active", flight_hours_month=52.0,  flight_hours_total=2100.0),
     ])
     s.add_all([
-        Flight(flight_id="FL001", flight_number="FN-2025-001", call_sign="EAGLE1", aircraft_id="AC001", flight_date="2025-06-01", estimated_departure="06:00:00", estimated_arrival="08:00:00", actual_departure="06:05:00", actual_arrival="08:10:00", flight_purpose="Training",           flight_plan="Route A to B", status="Completed", flight_duration=2.08, mission_type="Training"),
-        Flight(flight_id="FL002", flight_number="FN-2025-002", call_sign="HAWK2",  aircraft_id="AC002", flight_date="2025-06-03", estimated_departure="09:00:00", estimated_arrival="13:00:00", actual_departure="09:15:00", actual_arrival="13:10:00", flight_purpose="Logistics",          flight_plan="Route C to D", status="Completed", flight_duration=3.92, mission_type="Logistics"),
-        Flight(flight_id="FL003", flight_number="FN-2025-003", call_sign="VIPER3", aircraft_id="AC001", flight_date="2025-06-10", estimated_departure="14:00:00", estimated_arrival="16:00:00", actual_departure=None,        actual_arrival=None,        flight_purpose="Combat Air Patrol", flight_plan="Route E",      status="Scheduled", flight_duration=2.00, mission_type="Combat"),
+        Flight(flight_id="FL001", flight_number="FN-2025-001", call_sign="EAGLE1", aircraft_id="AC001",
+               flight_date=date(2025,6,1),
+               estimated_departure=time(6,0),   estimated_arrival=time(8,0),
+               actual_departure=time(6,5),       actual_arrival=time(8,10),
+               flight_purpose="Training",        flight_plan="Route A to B",
+               status="Completed",               flight_duration=2.08, mission_type="Training"),
+        Flight(flight_id="FL002", flight_number="FN-2025-002", call_sign="HAWK2",  aircraft_id="AC002",
+               flight_date=date(2025,6,3),
+               estimated_departure=time(9,0),   estimated_arrival=time(13,0),
+               actual_departure=time(9,15),      actual_arrival=time(13,10),
+               flight_purpose="Logistics",       flight_plan="Route C to D",
+               status="Completed",               flight_duration=3.92, mission_type="Logistics"),
+        Flight(flight_id="FL003", flight_number="FN-2025-003", call_sign="VIPER3", aircraft_id="AC001",
+               flight_date=date(2025,6,10),
+               estimated_departure=time(14,0),  estimated_arrival=time(16,0),
+               actual_departure=None,             actual_arrival=None,
+               flight_purpose="Combat Air Patrol", flight_plan="Route E",
+               status="Scheduled",               flight_duration=2.00, mission_type="Combat"),
     ])
     s.add_all([
         Crew(crew_id="CR001", flight_id="FL001", pilot_id="P001", role="Pilot in Command", duty_station="Cockpit"),
@@ -41,10 +63,10 @@ def seed():
         Crew(crew_id="CR004", flight_id="FL003", pilot_id="P001", role="Pilot in Command", duty_station="Cockpit"),
     ])
     s.add_all([
-        FlightLog(log_id="LOG001", flight_id="FL001", log_time="2025-06-01 06:05:00", log_type="Departure", description="Takeoff successful",        location="Runway 09L",   fuel_remaining=4500.00),
-        FlightLog(log_id="LOG002", flight_id="FL001", log_time="2025-06-01 07:00:00", log_type="Waypoint",  description="Passing waypoint Alpha",    location="Grid 45N-83E", fuel_remaining=3800.00),
-        FlightLog(log_id="LOG003", flight_id="FL001", log_time="2025-06-01 08:10:00", log_type="Arrival",   description="Landed successfully",       location="Runway 27R",   fuel_remaining=1200.00),
-        FlightLog(log_id="LOG004", flight_id="FL002", log_time="2025-06-03 09:15:00", log_type="Departure", description="Takeoff successful",        location="Runway 18L",   fuel_remaining=8000.00),
+        FlightLog(log_id="LOG001", flight_id="FL001", log_time=datetime(2025,6,1,6,5),  log_type="Departure", description="Takeoff successful",     location="Runway 09L",   fuel_remaining=4500.0),
+        FlightLog(log_id="LOG002", flight_id="FL001", log_time=datetime(2025,6,1,7,0),  log_type="Waypoint",  description="Passing waypoint Alpha", location="Grid 45N-83E", fuel_remaining=3800.0),
+        FlightLog(log_id="LOG003", flight_id="FL001", log_time=datetime(2025,6,1,8,10), log_type="Arrival",   description="Landed successfully",    location="Runway 27R",   fuel_remaining=1200.0),
+        FlightLog(log_id="LOG004", flight_id="FL002", log_time=datetime(2025,6,3,9,15), log_type="Departure", description="Takeoff successful",     location="Runway 18L",   fuel_remaining=8000.0),
     ])
     s.add_all([
         Passenger(passenger_id="PAS001", ticket_number="TKT-001", first_name="Suyog", last_name="Bhandari", class_="Business", status="Active", passport_number="NP-12345"),
@@ -52,13 +74,14 @@ def seed():
         Passenger(passenger_id="PAS003", ticket_number="TKT-003", first_name="Hari",  last_name="Gurung",   class_="Economy",  status="Active", passport_number="NP-11223"),
     ])
     s.add_all([
-        Booking(booking_id="BK001", flight_id="FL002", passenger_id="PAS001", booking_date="2025-05-20", seat_assignment="12A", booking_status="Confirmed"),
-        Booking(booking_id="BK002", flight_id="FL002", passenger_id="PAS002", booking_date="2025-05-21", seat_assignment="14B", booking_status="Confirmed"),
-        Booking(booking_id="BK003", flight_id="FL003", passenger_id="PAS003", booking_date="2025-05-25", seat_assignment="10C", booking_status="Pending"),
+        Booking(booking_id="BK001", flight_id="FL002", passenger_id="PAS001", booking_date=date(2025,5,20), seat_assignment="12A", booking_status="Confirmed"),
+        Booking(booking_id="BK002", flight_id="FL002", passenger_id="PAS002", booking_date=date(2025,5,21), seat_assignment="14B", booking_status="Confirmed"),
+        Booking(booking_id="BK003", flight_id="FL003", passenger_id="PAS003", booking_date=date(2025,5,25), seat_assignment="10C", booking_status="Pending"),
     ])
     s.commit()
 
 seed()
+
 
 class App(ctk.CTk):
     def __init__(self):
@@ -98,12 +121,9 @@ class App(ctk.CTk):
         self.show_view(AircraftView)
 
     def show_view(self, view_class):
-        # Expire all ORM objects so next view gets fresh data
         get_session().expire_all()
-
         if self.current_view is not None:
             self.current_view.destroy()
-
         self.current_view = view_class(self.content)
         self.current_view.pack(fill="both", expand=True)
 
@@ -113,6 +133,7 @@ class App(ctk.CTk):
         except Exception:
             pass
         self.destroy()
+
 
 if __name__ == "__main__":
     app = App()
